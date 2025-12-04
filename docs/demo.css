@@ -1,11 +1,5 @@
 /* Reset & Base Styles */
-body.demo-page,
-.demo-header,
-.demo-header *,
-.demo-footer,
-.demo-footer *,
-.player-container,
-.player-container * {
+*:not(.plyrty-root):not(.plyrty-root *) {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
