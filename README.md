@@ -1,4 +1,4 @@
-<div aligin="center"> 
+<div align="center">
     # Plyrty Player
 
     ![License](https://img.shields.io/badge/license-MIT-green)
