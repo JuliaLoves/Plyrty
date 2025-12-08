@@ -37,7 +37,7 @@ Simply include the script in your project. Plyrty will automatically detect `<vi
 <!-- Include Plyrty Script -->
 <script src="path/to/plyrty.js"></script>
 
-<!-- Add CSS (or let the script handle styles if bundled) -->
+<!-- Add CSS -->
 <link rel="stylesheet" href="path/to/plyrty.css">
 ```
 
