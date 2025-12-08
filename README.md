@@ -1,7 +1,7 @@
 <div align="center">
     # Plyrty Player
 
-    ![License](https://img.shields.io/badge/license-MIT-green)
+    [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
     [![English](https://img.shields.io/badge/lang-English-blue)](README.md)
     [![Русский](https://img.shields.io/badge/язык-Русский-red)](README.ru.md)
 </div>
