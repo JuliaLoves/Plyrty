@@ -1,19 +1,39 @@
 :root {
-    --primary-color: #19cc31;
-    --bg: #000;
-    --controls-bg: rgba(20, 20, 20, 0.75);
-    --text: #fff;
-    --muted: #cfcfcf;
-    --accent: #19cc31;
-    --menu-bg: rgba(28, 28, 28, 0.98);
-    --menu-border: rgba(255, 255, 255, 0.12);
-    --menu-hover: rgba(255, 255, 255, 0.10);
+    --plyrty-primary: #19cc31;
+    --plyrty-secondary: #000;
+    --plyrty-background: #000;
+    --plyrty-controls-bg: rgba(20, 20, 20, 0.75);
+    --plyrty-text: #fff;
+    --plyrty-muted: #cfcfcf;
+    --plyrty-accent: #19cc31;
+    --plyrty-menu-bg: rgba(28, 28, 28, 0.98);
+    --plyrty-menu-border: rgba(255, 255, 255, 0.12);
+    --plyrty-menu-hover: rgba(255, 255, 255, 0.10);
+
+    --plyrty-button-bg: transparent;
+    --plyrty-button-color: var(--plyrty-text);
+    --plyrty-button-hover-bg: rgba(255, 255, 255, 0.12);
+    --plyrty-progress-bg: rgba(255, 255, 255, 0.25);
+    --plyrty-progress-filled: var(--plyrty-accent);
+    --plyrty-tooltip-bg: rgba(0, 0, 0, 0.7);
+    --plyrty-tooltip-border: rgba(255, 255, 255, 0.15);
+
+    --plyrty-font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    --plyrty-button-size: 40px;
+    --plyrty-button-radius: 10px;
+    --plyrty-big-button-size: 72px;
+    --plyrty-control-padding: 10px;
+    --plyrty-gap-size: 10px;
+    --plyrty-border-radius: 12px;
+
+    --plyrty-transition-speed: 180ms;
+    --plyrty-easing: ease;
 }
 
 .plyrty-root {
-    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    font-family: var(--plyrty-font-family);
     position: relative;
-    background: var(--bg);
+    background: var(--plyrty-background);
     overflow: hidden;
     max-width: 100%;
     width: 100%;
@@ -41,11 +61,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
-    color: var(--text);
+    padding: 6px var(--plyrty-control-padding);
+    color: var(--plyrty-text);
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
     opacity: 0;
-    transition: opacity 180ms ease;
+    transition: opacity var(--plyrty-transition-speed) var(--plyrty-easing);
 }
 
 .plyrty-mid {
@@ -57,20 +77,20 @@
 .plyrty-btn {
     pointer-events: auto;
     border: none;
-    background: transparent;
-    color: var(--text);
+    background: var(--plyrty-button-bg);
+    color: var(--plyrty-button-color);
     font-size: 18px;
-    width: 40px;
-    height: 40px;
+    width: var(--plyrty-button-size);
+    height: var(--plyrty-button-size);
     display: grid;
     place-items: center;
-    border-radius: 10px;
-    transition: background 160ms ease, color 160ms ease, transform 80ms ease;
+    border-radius: var(--plyrty-button-radius);
+    transition: background 160ms var(--plyrty-easing), color 160ms var(--plyrty-easing), transform 80ms var(--plyrty-easing);
     cursor: pointer;
 }
 
 .plyrty-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--plyrty-button-hover-bg);
 }
 
 .plyrty-btn:active {
@@ -81,8 +101,8 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 72px;
-    height: 72px;
+    width: var(--plyrty-big-button-size);
+    height: var(--plyrty-big-button-size);
     font-size: 28px;
     background: rgba(0, 0, 0, 0.45);
     border-radius: 50%;
@@ -93,24 +113,24 @@
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 10px;
-    padding: 10px 10px 0 10px;
+    gap: var(--plyrty-gap-size);
+    padding: var(--plyrty-control-padding) var(--plyrty-control-padding) 0 var(--plyrty-control-padding);
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
     pointer-events: auto;
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 180ms ease, transform 180ms ease;
+    transition: opacity var(--plyrty-transition-speed) var(--plyrty-easing), transform var(--plyrty-transition-speed) var(--plyrty-easing);
 }
 
 .plyrty-left, .plyrty-center, .plyrty-right {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--plyrty-gap-size);
     min-width: 0;
 }
 
 .plyrty-time {
-    color: var(--text);
+    color: var(--plyrty-text);
     font-size: 14px;
     white-space: nowrap;
 }
@@ -118,7 +138,7 @@
 .plyrty-progress {
     position: relative;
     height: 10px;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--plyrty-progress-bg);
     border-radius: 999px;
     overflow: visible;
     cursor: pointer;
@@ -133,9 +153,9 @@
     padding: 4px 8px;
     font-size: 12px;
     line-height: 1;
-    color: var(--text);
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--plyrty-text);
+    background: var(--plyrty-tooltip-bg);
+    border: 1px solid var(--plyrty-tooltip-border);
     border-radius: 6px;
     white-space: nowrap;
     pointer-events: none;
@@ -149,7 +169,7 @@
     bottom: 0;
     width: 0%;
     border-radius: 999px;
-    background: var(--accent);
+    background: var(--plyrty-progress-filled);
     z-index: 2;
 }
 
@@ -169,10 +189,10 @@
     bottom: 60px;
     min-width: 190px;
     max-width: min(280px, 90vw);
-    background: var(--menu-bg);
-    color: var(--text);
-    border: 1px solid var(--menu-border);
-    border-radius: 12px;
+    background: var(--plyrty-menu-bg);
+    color: var(--plyrty-text);
+    border: 1px solid var(--plyrty-menu-border);
+    border-radius: var(--plyrty-border-radius);
     padding: 10px 8px;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     pointer-events: auto;
@@ -190,12 +210,12 @@
 .plyrty-menu-section+.plyrty-menu-section {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px dashed var(--menu-border);
+    border-top: 1px dashed var(--plyrty-menu-border);
 }
 
 .plyrty-menu-title {
     font-size: 13px;
-    color: var(--muted);
+    color: var(--plyrty-muted);
     margin: 0 6px 6px 6px;
 }
 
@@ -227,7 +247,7 @@
 }
 
 .plyrty-menu-item:hover {
-    background: var(--menu-hover);
+    background: var(--plyrty-menu-hover);
 }
 
 .plyrty-menu-item.active {
@@ -247,10 +267,10 @@
     appearance: none;
     width: 110px;
     height: 8px;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--plyrty-progress-bg);
     border-radius: 999px;
     cursor: pointer;
-    background-image: linear-gradient(var(--accent), var(--accent));
+    background-image: linear-gradient(var(--plyrty-progress-filled), var(--plyrty-progress-filled));
     background-size: var(--fill) 100%;
     background-repeat: no-repeat;
 }
@@ -261,7 +281,7 @@
 
 .plyrty-range::-webkit-slider-runnable-track {
     height: 8px;
-    background: linear-gradient(var(--accent), var(--accent)) left/var(--fill) 100% no-repeat, rgba(255, 255, 255, 0.25);
+    background: linear-gradient(var(--plyrty-progress-filled), var(--plyrty-progress-filled)) left/var(--fill) 100% no-repeat, var(--plyrty-progress-bg);
     border-radius: 999px;
 }
 
@@ -272,19 +292,19 @@
     height: 16px;
     margin-top: -4px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--plyrty-progress-filled);
     border: none;
 }
 
 .plyrty-range::-moz-range-track {
     height: 8px;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--plyrty-progress-bg);
     border-radius: 999px;
 }
 
 .plyrty-range::-moz-range-progress {
     height: 8px;
-    background: var(--accent);
+    background: var(--plyrty-progress-filled);
     border-radius: 999px;
 }
 
@@ -292,7 +312,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--plyrty-progress-filled);
     border: none;
 }
 
@@ -310,7 +330,7 @@
     width: 38px;
     height: 38px;
     border: 4px solid rgba(255, 255, 255, 0.25);
-    border-top-color: var(--primary-color);
+    border-top-color: var(--plyrty-primary);
     border-radius: 50%;
     animation: plyrty-spin 1s linear infinite;
 }
@@ -350,9 +370,9 @@
     pointer-events: none;
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
-    transition: opacity 140ms ease, transform 140ms ease;
+    transition: opacity 140ms var(--plyrty-easing), transform 140ms var(--plyrty-easing);
     z-index: 40;
-    color: var(--text);
+    color: var(--plyrty-text);
 }
 
 .plyrty-toast-top {
@@ -413,8 +433,8 @@
     border: 1px solid rgba(255, 255, 255, 0.18);
     display: grid;
     place-items: center;
-    color: var(--text);
-    animation: bubble-pop 220ms ease;
+    color: var(--plyrty-text);
+    animation: bubble-pop 220ms var(--plyrty-easing);
     text-align: center;
 }
 
@@ -498,10 +518,58 @@
     .plyrty-volume .plyrty-range {
         display: none !important;
     }
+
+    .plyrty-btn {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+
+    .plyrty-btn.big {
+        width: 80px;
+        height: 80px;
+        font-size: 32px;
+    }
+
+    .plyrty-controls {
+        padding: 15px 15px 0 15px;
+    }
+
+    .plyrty-topbar {
+        padding: 10px 15px;
+    }
+
+    .plyrty-time {
+        font-size: 16px;
+    }
+
+    .plyrty-menu {
+        right: 12px;
+        bottom: 70px;
+        min-width: 200px;
+    }
 }
 
-@media (orientation: landscape) and (max-height: 480px), (max-width: 600px) {
-    .plyrty-volume .plyrty-range {
-        display: none !important;
+@media (max-width: 768px) {
+    .plyrty-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .plyrty-btn.big {
+        width: 76px;
+        height: 76px;
+    }
+
+    .plyrty-controls {
+        padding: 12px 12px 0 12px;
+    }
+
+    .plyrty-topbar {
+        padding: 8px 12px;
+    }
+
+    .plyrty-time {
+        font-size: 15px;
     }
 }
