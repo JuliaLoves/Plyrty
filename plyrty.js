@@ -1127,17 +1127,28 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             wrapper.classList.add('ui-show');
             wrapper.classList.remove('ui-hide');
             clearTimeout(uiHideTimer);
-            if (!originalVideo.paused) {
+
+            if (!originalVideo.paused && menu.hidden) {
                 uiHideTimer = setTimeout(() => {
-                    if (Date.now() - lastActivityTs > 1800) {
-                        wrapper.classList.remove('ui-show');
+                    if (!originalVideo.paused && menu.hidden && Date.now() - lastActivityTs > 1800) {
                         wrapper.classList.add('ui-hide');
-                        if (!menu.hidden) {
-                            menu.hidden = true;
-                            settingsBtn.setAttribute('aria-expanded', 'false');
-                        }
+                        wrapper.classList.remove('ui-show');
                     }
                 }, 2300);
+            }
+        }
+
+        function updateUIState() {
+            if (!menu.hidden) {
+                wrapper.classList.add('ui-show');
+                wrapper.classList.remove('ui-hide');
+
+                if (uiHideTimer) {
+                    clearTimeout(uiHideTimer);
+                    uiHideTimer = null;
+                }
+            } else if (!originalVideo.paused) {
+                showUI();
             }
         }
 
@@ -1236,6 +1247,8 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                 menu.hidden = !willOpen;
                 btn.setAttribute('aria-expanded', String(willOpen));
                 if (willOpen && typeof fit === 'function') fit();
+
+                updateUIState();
             }
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1399,18 +1412,33 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         }
 
         function updateVolumeIcon(v) {
-            v = originalVideo.muted ? 0 : originalVideo.volume;
-            const cls = v === 0 ? 'ph-speaker-x' : (v < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
-            volIcon.innerHTML = `<i class="ph ${cls}"></i>`;
+            if (originalVideo.muted) {
+                volIcon.innerHTML = `<i class="ph ph-speaker-x"></i>`;
+            } else {
+                v = originalVideo.volume;
+                const cls = v === 0 ? 'ph-speaker-none' : (v < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
+                volIcon.innerHTML = `<i class="ph ${cls}"></i>`;
+            }
         }
 
         const mobile = isMobileCoarse;
+        let firstTap = true;
+        let tapTimer = null;
+        let tapCount = 0;
+        let lastTapTime = 0;
+        let isTapHandled = false;
+        let singleTapTimer = null;
+
         if (mobile) {
             originalVideo.muted = false;
             originalVideo.volume = 1;
             volRange.value = '1';
             updateRangeFill(volRange);
             updateVolumeIcon(1);
+
+            wrapper.addEventListener('touchstart', handleTouchStart, { passive: true });
+            wrapper.addEventListener('touchend', handleTouchEnd, { passive: true });
+            wrapper.addEventListener('click', handleClick, { passive: false });
         } else {
             const mutedSaved = localStorage.getItem(STORAGE.MUTED);
             const volSaved = localStorage.getItem(STORAGE.VOL);
@@ -1423,6 +1451,105 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             updateRangeFill(volRange);
             updateVolumeIcon();
         }
+
+        function handleTouchStart(e) {
+            const target = e.target;
+            const isControlElement = target.classList.contains('plyrty-btn') ||
+                                   target.closest('.plyrty-btn') ||
+                                   target.classList.contains('plyrty-progress') ||
+                                   target.closest('.plyrty-progress') ||
+                                   target.classList.contains('plyrty-range') ||
+                                   target.closest('.plyrty-range') ||
+                                   target.classList.contains('plyrty-menu') ||
+                                   target.closest('.plyrty-menu') ||
+                                   target.classList.contains('plyrty-menu-item') ||
+                                   target.closest('.plyrty-menu-item');
+
+            if (isControlElement) {
+                isTapHandled = true;
+                return;
+            }
+
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const rect = wrapper.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+
+            const currentTime = new Date().getTime();
+            const tapDelay = currentTime - lastTapTime;
+            const isDoubleTap = (tapDelay < 300);
+
+            if (isDoubleTap) {
+                if (singleTapTimer) {
+                    clearTimeout(singleTapTimer);
+                    singleTapTimer = null;
+                }
+
+                if (x < rect.width * 0.4) {
+                    originalVideo.currentTime = Math.max(0, originalVideo.currentTime - 10);
+                    showToast('← 10 сек', 'left');
+                } else if (x > rect.width * 0.6) {
+                    originalVideo.currentTime = Math.min(originalVideo.duration, originalVideo.currentTime + 10);
+                    showToast('10 сек →', 'right');
+                } 
+                isTapHandled = true;
+            } else {
+                showUI();
+                singleTapTimer = setTimeout(() => {
+                    if (firstTap) {
+                        firstTap = false;
+                    } else {
+                        if (originalVideo.paused) {
+                            originalVideo.play().catch(() => {});
+                        } else {
+                            originalVideo.pause();
+                        }
+                    }
+                }, 300);
+            }
+
+            lastTapTime = currentTime;
+        }
+
+        function handleTouchEnd(e) {
+            setTimeout(() => {
+                isTapHandled = false;
+            }, 100);
+        }
+
+        function handleClick(e) {
+            const target = e.target;
+            const isControlElement = target.classList.contains('plyrty-btn') ||
+                                   target.closest('.plyrty-btn') ||
+                                   target.classList.contains('plyrty-progress') ||
+                                   target.closest('.plyrty-progress') ||
+                                   target.classList.contains('plyrty-range') ||
+                                   target.closest('.plyrty-range') ||
+                                   target.classList.contains('plyrty-menu') ||
+                                   target.closest('.plyrty-menu') ||
+                                   target.classList.contains('plyrty-menu-item') ||
+                                   target.closest('.plyrty-menu-item');
+
+            if (mobile && !isControlElement && isTapHandled) {
+                e.preventDefault();
+            }
+        }
+
+        function showToast(message, position = 'top') {
+            const toast = position === 'top' ? toastTop :
+                         position === 'left' ? toastLeft : toastRight;
+
+            toast.textContent = message;
+            toast.classList.add('show', position);
+
+            setTimeout(() => {
+                toast.classList.remove('show', position);
+            }, 1500);
+        }
+
+        let previousVolume = 1;
 
         originalVideo.addEventListener('volumechange', () => {
             if (!mobile) {
@@ -1437,14 +1564,31 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         volRange.addEventListener('input', () => {
             const v = clamp01(parseFloat(volRange.value) || 0);
             originalVideo.volume = v;
-            originalVideo.muted = v === 0;
+
+            if (v > 0) {
+                originalVideo.muted = false;
+            } else if (v === 0 && !originalVideo.muted) {
+                updateVolumeIcon();
+            }
+
+            if (v > 0) {
+                previousVolume = v;
+            }
+
             updateRangeFill(volRange);
-            updateVolumeIcon(v);
+            updateVolumeIcon();
         });
 
         volIcon.addEventListener('click', () => {
-            originalVideo.muted = !originalVideo.muted;
-            volRange.value = originalVideo.muted ? '0' : String(originalVideo.volume || 1);
+            if (originalVideo.muted) {
+                originalVideo.muted = false;
+                originalVideo.volume = previousVolume;
+                volRange.value = String(previousVolume);
+            } else {
+                previousVolume = originalVideo.volume;
+                originalVideo.muted = true;
+                volRange.value = '0';
+            }
             updateRangeFill(volRange);
             updateVolumeIcon();
         });
@@ -1609,16 +1753,6 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             }
         });
 
-        videoWrap.addEventListener('click', (e) => {
-            if (isMobileCoarse) {
-                e.stopPropagation();
-                e.preventDefault();
-                return;
-            }
-            const path = e.composedPath ? e.composedPath() : [];
-            if (path.includes(controls) || path.includes(menu)) return;
-            togglePlay();
-        });
 
         playBtn.addEventListener('click', togglePlay);
         bigPlay.addEventListener('click', togglePlay);
@@ -1626,14 +1760,27 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         originalVideo.addEventListener('play', () => {
             setPlayIcon();
             lastActivityTs = Date.now();
-            showUI();
+
+            if (!menu.hidden) {
+                wrapper.classList.add('ui-show');
+                wrapper.classList.remove('ui-hide');
+            } else if (!mobile) {
+                showUI();
+            } else {
+                showUI();
+            }
         });
 
         originalVideo.addEventListener('pause', () => {
             setPlayIcon();
             clearTimeout(uiHideTimer);
-            wrapper.classList.add('ui-show');
-            wrapper.classList.remove('ui-hide');
+            if (!mobile) {
+                wrapper.classList.add('ui-show');
+                wrapper.classList.remove('ui-hide');
+            } else {
+                wrapper.classList.add('ui-show');
+                wrapper.classList.remove('ui-hide');
+            }
         });
 
         originalVideo.addEventListener('timeupdate', () => {
@@ -1664,103 +1811,42 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             loader.style.display = 'none';
         });
 
-        ['mousemove', 'touchstart', 'pointermove', 'keydown'].forEach(evt => {
+        ['mousemove', 'pointermove', 'keydown'].forEach(evt => {
             wrapper.addEventListener(evt, () => {
+                if (mobile) {
+                    return;
+                }
+
                 lastActivityTs = Date.now();
-                showUI();
+
+                if (!menu.hidden) {
+                    wrapper.classList.add('ui-show');
+                    wrapper.classList.remove('ui-hide');
+
+                    if (uiHideTimer) {
+                        clearTimeout(uiHideTimer);
+                        uiHideTimer = null;
+                    }
+                } else {
+                    showUI();
+                }
             }, { passive: true });
         });
 
+        wrapper.addEventListener('touchstart', (e) => {
+            if (!mobile) {
+                lastActivityTs = Date.now();
+                showUI();
+            }
+        }, { passive: true });
+
         wrapper.addEventListener('mouseleave', () => {
-            if (!originalVideo.paused) {
+            if (!mobile && !originalVideo.paused && menu.hidden) {
                 wrapper.classList.remove('ui-show');
-                if (!menu.hidden) {
-                    menu.hidden = true;
-                    settingsBtn.setAttribute('aria-expanded', 'false');
-                }
                 wrapper.classList.add('ui-hide');
             }
         });
 
-        if (isMobileCoarse) {
-            const TAP_DELAY_MS = 280;
-            const HOLD_TOUCH_MS = 250;
-            let tapTimer = null;
-            let holdTimer = null;
-            let holdActive = false;
-
-            function getTouchPoint(e) {
-                const t = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : null);
-                return t ? { x: t.clientX, y: t.clientY } : null;
-            }
-
-            videoWrap.addEventListener('touchstart', (e) => {
-                const path = e.composedPath ? e.composedPath() : [];
-                if (path.includes(controls) || path.includes(menu)) return;
-                const now = performance.now();
-                const pt = getTouchPoint(e);
-                if (!pt) return;
-                clearTimeout(holdTimer);
-                holdTimer = setTimeout(() => {
-                    holdActive = true;
-                    if (tapTimer) {
-                        clearTimeout(tapTimer);
-                        tapTimer = null;
-                    }
-                    originalVideo.playbackRate = 2;
-                    showTopMsg('2x', 'ph-fast-forward');
-                }, HOLD_TOUCH_MS);
-                if (!tapTimer) {
-                    tapTimer = setTimeout(() => {
-                        tapTimer = null;
-                        if (!holdActive && !lastTapWasDouble) {
-                            if (originalVideo.paused) originalVideo.play();
-                            else originalVideo.pause();
-                            suppressClickUntil = performance.now() + 350;
-                        }
-                    }, TAP_DELAY_MS);
-                } else {
-                    clearTimeout(tapTimer);
-                    tapTimer = null;
-                    const rect = videoWrap.getBoundingClientRect();
-                    const onRight = (pt.x - rect.left) > (rect.width / 2);
-                    const shift = onRight ? 5 : -5;
-                    originalVideo.currentTime = Math.max(0, Math.min(originalVideo.duration || 0, originalVideo.currentTime + shift));
-                    showSeekToast(onRight ? 'right' : 'left');
-                    suppressClickUntil = now + 800;
-                    lastTapWasDouble = true;
-                    setTimeout(() => { lastTapWasDouble = false; }, 850);
-                }
-                if (e.cancelable) e.preventDefault();
-                clearTimeout(holdTimer);
-                holdActive = false;
-            }, { passive: false });
-
-            videoWrap.addEventListener('touchend', (e) => {
-                clearTimeout(holdTimer);
-                if (holdActive) {
-                    holdActive = false;
-                    hideToastImmediate(toastTop, 'top');
-                    originalVideo.playbackRate = baseRate;
-                }
-            }, { passive: true });
-
-            videoWrap.addEventListener('touchcancel', () => {
-                clearTimeout(holdTimer);
-                if (holdActive) {
-                    holdActive = false;
-                    hideToastImmediate(toastTop, 'top');
-                    originalVideo.playbackRate = baseRate;
-                }
-            }, { passive: true });
-
-            videoWrap.addEventListener('click', (e) => {
-                if ((performance.now() < suppressClickUntil) || lastTapWasDouble) {
-                    e.stopPropagation();
-                    if (e.cancelable) e.preventDefault();
-                }
-            }, true);
-        }
 
         setPlayIcon();
         updateTime();

@@ -4,7 +4,9 @@
 
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![English](https://img.shields.io/badge/lang-English-blue)](README.md)
+[![Styling](https://img.shields.io/badge/styling-English-blue)](STYLING.md)
 [![Русский](https://img.shields.io/badge/язык-Русский-red)](README.ru.md)
+[![Стилизация](https://img.shields.io/badge/стилизация-Русский-red)](STYLING.ru.md)
 
 </div>
 
@@ -25,6 +27,7 @@ Unlike standard wrappers, Plyrty features a **Smart Auto-Quality** algorithm tha
   - Settings menu for Quality and Playback Speed.
   - Picture-in-Picture (PiP) and Fullscreen modes.
   - Interactive volume slider and time display.
+  - Smart volume icon: shows different icons for mute (<code>ph-speaker-x</code>), zero volume (<code>ph-speaker-none</code>), low volume (<code>ph-speaker-low</code>), and high volume (<code>ph-speaker-high</code>).
 - 📡 **Chromecast Ready:** Built-in Cast button and integration with Google Cast Framework.
 - 🎨 **Themable:** Fully customizable via CSS variables.
 - 🛠 **Developer Friendly:** Detailed, color-coded logging system for debugging.
@@ -37,7 +40,7 @@ Simply include the script in your project. Plyrty will automatically detect `<vi
 <!-- Include Plyrty Script -->
 <script src="path/to/plyrty.js"></script>
 
-<!-- Add CSS -->
+<!-- Add CSS (or let the script handle styles if bundled) -->
 <link rel="stylesheet" href="path/to/plyrty.css">
 ```
 
@@ -82,6 +85,36 @@ You can customize the player's appearance by overriding CSS variables in your st
     --control-bar-bg: rgba(0, 0, 0, 0.8);
 }
 ```
+
+### Mobile Optimization
+
+Plyrty provides enhanced mobile experience with intuitive touch controls:
+
+- **Any tap**: Shows the player controls UI on first tap
+- **Subsequent single taps**: Show UI and wait 300ms to check for double tap before toggling play/pause (only if not a double tap)
+- **Double tap on left side**: Rewind 10 seconds (without showing UI)
+- **Double tap on right side**: Forward 10 seconds (without showing UI)
+- **Taps on control elements**: Interact with controls normally (don't trigger play/pause)
+- **Taps on menu elements**: Interact with menu items normally (don't trigger play/pause)
+- **Larger touch targets**: Better accessibility on small screens
+
+The player automatically adapts to different screen sizes and orientations for optimal viewing experience.
+
+### Global Styling
+
+Plyrty allows global customization of the player appearance through CSS variables. You can override any of the default variables to match your website's design:
+
+```css
+/* Example: Customizing the player globally */
+.plyrty-root {
+    --plyrty-primary: #ff6b35;
+    --plyrty-background: #1a1a1a;
+    --plyrty-text: #ffffff;
+    --plyrty-accent: #ff6b35;
+}
+```
+
+Available CSS variables include colors, dimensions, and animations that affect the entire player appearance.
 
 ## 🧠 How Smart Auto-Quality Works
 
