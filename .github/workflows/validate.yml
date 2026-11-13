@@ -6,18 +6,21 @@ on:
   pull_request:
 
 jobs:
-  syntax-and-sync:
+  syntax-and-demo:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Check JavaScript syntax
+      - name: Check player JavaScript syntax
+        run: node --check plyrty.js
+      - name: Ensure demo loads player assets from repository root
         run: |
-          node --check plyrty.js
-          node --check docs/plyrty.js
-      - name: Ensure demo assets match package assets
+          grep -F "cdn.jsdelivr.net/gh/JuliaLoves/Plyrty@main/plyrty.js" docs/index.html
+          grep -F "cdn.jsdelivr.net/gh/JuliaLoves/Plyrty@main/plyrty.css" docs/index.html
+          test ! -e docs/plyrty.js
+          test ! -e docs/plyrty.css
+      - name: Ensure old insecure sample URLs are gone
         run: |
-          cmp plyrty.js docs/plyrty.js
-          cmp plyrty.css docs/plyrty.css
+          ! grep -R "http://commondatastorage.googleapis.com" docs/index.html
