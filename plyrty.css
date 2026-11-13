@@ -474,9 +474,11 @@
     .plyrty-controls {
         grid-template-columns: 1fr auto;
         grid-template-areas:
-            "left right"
-            "center center";
+            "center center"
+            "left right";
+        grid-template-rows: auto auto;
         row-gap: 8px;
+        align-content: end;
     }
 
     .plyrty-left {
