@@ -496,6 +496,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         wrapper.appendChild(toastRight);
 
         let hls = null;
+        let sourceRequestId = 0;
         let autoModeControlled = false;
         let currentHeight = 0;
         let lastSwitchAt = 0;
@@ -1986,6 +1987,10 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                     if (error) reject(error); else resolve();
                 };
                 const onReady = () => {
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
+                    }
                     if (Number.isFinite(opt.resumeTime)) {
                         try { originalVideo.currentTime = opt.resumeTime; } catch { }
                     }
@@ -2008,6 +2013,9 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             destroyEngines();
             const nativeM3U8 = canPlayType(originalVideo, 'application/x-mpegURL') || canPlayType(originalVideo, 'application/vnd.apple.mpegurl');
             if (nativeM3U8) return loadNative(url, 'application/x-mpegURL', opt);
+            originalVideo.pause();
+            originalVideo.removeAttribute('src');
+            originalVideo.load();
             return new Promise((resolve, reject) => {
                 let instance = null;
                 let settled = false;
@@ -2020,6 +2028,10 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                 const timer = setTimeout(() => finish(new Error('Timed out while loading HLS manifest')), 20000);
                 importHls().then(HlsClass => {
                     if (settled) return;
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
+                    }
                     instance = new HlsClass({
                         enableWorker: true,
                         lowLatencyMode: false,
@@ -2039,7 +2051,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                         instance.loadSource(typeof window.plyrtyUrlReplace === 'function' ? window.plyrtyUrlReplace(url, originalVideo) : url);
                     });
                     instance.on(HlsClass.Events.MANIFEST_PARSED, () => {
-                        if (hls !== instance) return;
+                        if (hls !== instance || (opt.requestId !== undefined && opt.requestId !== sourceRequestId)) return;
                         try {
                             if (Number.isFinite(opt.resumeTime) && originalVideo.readyState >= 1) originalVideo.currentTime = opt.resumeTime;
                             if (opt.autoplay) originalVideo.play().catch(() => { });
@@ -2087,7 +2099,13 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                     try { dp.off(window.dashjs.MediaPlayer.events.ERROR, onError); } catch { }
                     if (error) reject(error); else resolve();
                 };
-                const onReady = () => finish();
+                const onReady = () => {
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
+                    }
+                    finish();
+                };
                 const onError = (event) => finish(new Error('MPEG-DASH playback error'));
                 const timer = setTimeout(() => finish(new Error('Timed out while loading MPEG-DASH manifest')), 20000);
                 try {
@@ -2168,7 +2186,8 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             setSource: async (url, type, resolutions) => {
                 const t = type || guessTypeFromUrl(url);
                 const wasPlaying = !originalVideo.paused;
-                const opt = { autoplay: wasPlaying, resumeTime: 0 };
+                const requestId = ++sourceRequestId;
+                const opt = { autoplay: wasPlaying, resumeTime: 0, requestId };
                 if (resolutions) {
                     const meta = __plyrtyMeta.get(originalVideo) || {};
                     __plyrtyMeta.set(originalVideo, { ...meta, _customMap: resolutions });
