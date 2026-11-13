@@ -1998,7 +1998,6 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                 originalVideo.addEventListener('error', onError, { once: true });
                 originalVideo.pause();
                 originalVideo.removeAttribute('src');
-                originalVideo.querySelectorAll('source').forEach(node => node.remove());
                 originalVideo.src = u;
                 originalVideo.load();
                 if (originalVideo.readyState >= 1) onReady();
@@ -2059,6 +2058,9 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
 
         function loadDash(url, opt) {
             destroyEngines();
+            originalVideo.pause();
+            originalVideo.removeAttribute('src');
+            originalVideo.load();
             const meta0 = __plyrtyMeta.get(originalVideo) || {};
             const isData = typeof url === 'string' && url.startsWith('data:');
             const isMaster = typeof url === 'string' && /\.mpd(\?|#|$)/i.test(url) && !isData;
@@ -2073,10 +2075,28 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                 __plyrtyMeta.set(originalVideo, { ...cur, lastDashUrl: url });
             } catch { }
             const start = Number.isFinite(opt.resumeTime) ? opt.resumeTime : undefined;
-            const dp = initDashIfAvailable(originalVideo, url, rewrite);
-            try {
-                if (dp?.initialize) dp.initialize(originalVideo, rewrite(url), false, start);
-            } catch { }
+            const dp = initDashIfAvailable(originalVideo, undefined, rewrite);
+            if (!dp) return Promise.reject(new Error('MPEG-DASH engine is unavailable'));
+            const ready = new Promise((resolve, reject) => {
+                let settled = false;
+                const finish = (error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    try { dp.off(window.dashjs.MediaPlayer.events.STREAM_INITIALIZED, onReady); } catch { }
+                    try { dp.off(window.dashjs.MediaPlayer.events.ERROR, onError); } catch { }
+                    if (error) reject(error); else resolve();
+                };
+                const onReady = () => finish();
+                const onError = (event) => finish(new Error('MPEG-DASH playback error'));
+                const timer = setTimeout(() => finish(new Error('Timed out while loading MPEG-DASH manifest')), 20000);
+                try {
+                    const E = window.dashjs.MediaPlayer.events;
+                    dp.on(E.STREAM_INITIALIZED, onReady);
+                    dp.on(E.ERROR, onError);
+                    dp.initialize(originalVideo, rewrite(url), false, start);
+                } catch (error) { finish(error); }
+            });
             try {
                 if (dp && window.dashjs) {
                     const E = window.dashjs.MediaPlayer.events;
@@ -2104,7 +2124,8 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                     }
                 }
             } catch { }
-            if (opt.autoplay) originalVideo.play().catch(() => { });
+            if (opt.autoplay) ready.then(() => originalVideo.play().catch(() => { })).catch(() => { });
+            return ready;
         }
 
         function loadSource(url, type, opt) {
