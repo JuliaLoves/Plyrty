@@ -2148,10 +2148,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
 
         function loadSource(url, type, opt) {
             const t = (type || guessTypeFromUrl(url)).toLowerCase();
-            if (t.includes('dash') || t.endsWith('mpd')) {
-                loadDash(url, opt);
-                return Promise.resolve();
-            }
+            if (t.includes('dash') || t.endsWith('mpd')) return loadDash(url, opt);
             if (t.includes('mpegurl') || t.includes('m3u8')) return loadHls(url, opt);
             return loadNative(url, t, opt);
         }
