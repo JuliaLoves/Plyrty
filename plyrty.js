@@ -496,6 +496,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         wrapper.appendChild(toastRight);
 
         let hls = null;
+        let sourceRequestId = 0;
         let autoModeControlled = false;
         let currentHeight = 0;
         let lastSwitchAt = 0;
@@ -577,17 +578,19 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             liAuto.setAttribute('aria-checked', autoActive ? 'true' : 'false');
             liAuto.onclick = async () => {
                 autoModeControlled = true;
-                let h = lastAutoHeight;
-                if (!h) {
-                    try {
-                        h = await pickStartAutoHeight();
-                    } catch { }
+                if (hls && Array.isArray(hls.levels) && hls.levels.length) {
+                    await switchQuality(0);
+                } else {
+                    let h = lastAutoHeight;
+                    if (!h) {
+                        try { h = await pickStartAutoHeight(); } catch { }
+                    }
+                    if (h) {
+                        lastAutoHeight = h;
+                        switchQuality(h).catch(() => { });
+                    }
+                    startAutoProbe();
                 }
-                if (h) {
-                    lastAutoHeight = h;
-                    switchQuality(h).catch(() => { });
-                }
-                startAutoProbe();
                 renderQualityMenu();
             };
             list.appendChild(liAuto);
@@ -931,6 +934,21 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             const wasPlaying = !originalVideo.paused;
             const t = originalVideo.currentTime || 0;
             const mpd = __plyrtyMeta.get(originalVideo)?.lastDashUrl || (isDash ? base : "");
+            if (!isDash && hls && Array.isArray(hls.levels) && hls.levels.length) {
+                if ((height | 0) === 0) {
+                    hls.currentLevel = -1;
+                    currentHeight = 0;
+                    autoModeControlled = true;
+                } else {
+                    const idx = hls.levels.findIndex(level => (level?.height | 0) === (height | 0));
+                    if (idx < 0) return;
+                    hls.currentLevel = idx;
+                    currentHeight = height | 0;
+                    autoModeControlled = false;
+                }
+                refreshQualityMenuIfOpen();
+                return;
+            }
             const urlResolved = resolveQualityUrl(height) || mpd;
             if (!urlResolved) return;
             const type = guessTypeFromUrl(urlResolved);
@@ -972,6 +990,15 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
             });
             hlsInstance.on(Hls.Events.LEVEL_LOADED, (evt, data) => {
                 initFromLevelDetails(data?.details);
+            });
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                if (hlsInstance === hls) {
+                    const heights = (hlsInstance.levels || []).map(level => level?.height | 0).filter(Boolean);
+                    if (heights.length) {
+                        lastAutoHeight = Math.max(...heights);
+                        refreshQualityMenuIfOpen();
+                    }
+                }
             });
             const mark = (evt, data) => {
                 if (data && data.frag && Number.isFinite(data.frag.sn)) {
@@ -1948,75 +1975,104 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
 
         function loadNative(url, type, opt) {
             destroyEngines();
-            const u = typeof window.plyrtyUrlReplace === 'function' ? window.plyrtyUrlReplace(url, originalVideo) : url;
-            originalVideo.src = u;
-            originalVideo.load();
-            if (Number.isFinite(opt.resumeTime)) {
-                const t = opt.resumeTime;
-                const set = () => {
-                    try {
-                        originalVideo.currentTime = t;
-                    } catch { }
+            return new Promise((resolve, reject) => {
+                const u = typeof window.plyrtyUrlReplace === 'function' ? window.plyrtyUrlReplace(url, originalVideo) : url;
+                let settled = false;
+                const finish = (error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    originalVideo.removeEventListener('loadedmetadata', onReady);
+                    originalVideo.removeEventListener('error', onError);
+                    if (error) reject(error); else resolve();
                 };
-                if (originalVideo.readyState >= 1) {
-                    set();
-                } else {
-                    originalVideo.addEventListener('loadedmetadata', set, { once: true });
-                }
-            }
-            if (opt.autoplay) originalVideo.play().catch(() => { });
+                const onReady = () => {
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
+                    }
+                    if (Number.isFinite(opt.resumeTime)) {
+                        try { originalVideo.currentTime = opt.resumeTime; } catch { }
+                    }
+                    if (opt.autoplay) originalVideo.play().catch(() => { });
+                    finish();
+                };
+                const onError = () => finish(new Error('Media source failed to load (code ' + (originalVideo.error?.code || 'unknown') + ')'));
+                const timer = setTimeout(() => finish(new Error('Timed out while loading media source')), 15000);
+                originalVideo.addEventListener('loadedmetadata', onReady, { once: true });
+                originalVideo.addEventListener('error', onError, { once: true });
+                originalVideo.pause();
+                originalVideo.removeAttribute('src');
+                originalVideo.src = u;
+                originalVideo.load();
+                if (originalVideo.readyState >= 1) onReady();
+            });
         }
 
         function loadHls(url, opt) {
             destroyEngines();
             const nativeM3U8 = canPlayType(originalVideo, 'application/x-mpegURL') || canPlayType(originalVideo, 'application/vnd.apple.mpegurl');
-            if (nativeM3U8) {
-                loadNative(url, 'application/x-mpegURL', opt);
-                return;
-            }
-            importHls().then(HlsClass => {
-                hls = new HlsClass({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    fetchSetup: (ctx, init) => {
-                        try {
-                            if (ctx && ctx.url && typeof window.plyrtyUrlReplace === 'function') {
-                                ctx.url = window.plyrtyUrlReplace(ctx.url, originalVideo);
-                            }
-                        } catch { }
-                        return init;
+            if (nativeM3U8) return loadNative(url, 'application/x-mpegURL', opt);
+            originalVideo.pause();
+            originalVideo.removeAttribute('src');
+            originalVideo.load();
+            return new Promise((resolve, reject) => {
+                let instance = null;
+                let settled = false;
+                const finish = (error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    if (error) reject(error); else resolve();
+                };
+                const timer = setTimeout(() => finish(new Error('Timed out while loading HLS manifest')), 20000);
+                importHls().then(HlsClass => {
+                    if (settled) return;
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
                     }
-                });
-                setupHlsBufferHandlers(hls);
-                hls.attachMedia(originalVideo);
-                hls.on(HlsClass.Events.MEDIA_ATTACHED, () => {
-                    try {
-                        hls.loadSource(typeof window.plyrtyUrlReplace === 'function' ? window.plyrtyUrlReplace(url, originalVideo) : url);
-                    } catch { }
-                });
-                hls.on(HlsClass.Events.MANIFEST_PARSED, () => {
-                    try {
-                        if (Number.isFinite(opt.resumeTime)) {
-                            const t = opt.resumeTime;
-                            const set = () => {
-                                try {
-                                    originalVideo.currentTime = t;
-                                } catch { }
-                            };
-                            if (originalVideo.readyState >= 1) {
-                                set();
-                            } else {
-                                originalVideo.addEventListener('loadedmetadata', set, { once: true });
-                            }
+                    instance = new HlsClass({
+                        enableWorker: true,
+                        lowLatencyMode: false,
+                        fetchSetup: (ctx, init) => {
+                            try {
+                                if (ctx && ctx.url && typeof window.plyrtyUrlReplace === 'function') {
+                                    ctx.url = window.plyrtyUrlReplace(ctx.url, originalVideo);
+                                }
+                            } catch { }
+                            return init;
                         }
-                        if (opt.autoplay) originalVideo.play().catch(() => { });
-                    } catch { }
-                });
+                    });
+                    hls = instance;
+                    setupHlsBufferHandlers(instance);
+                    instance.on(HlsClass.Events.MEDIA_ATTACHED, () => {
+                        if (hls !== instance) return;
+                        instance.loadSource(typeof window.plyrtyUrlReplace === 'function' ? window.plyrtyUrlReplace(url, originalVideo) : url);
+                    });
+                    instance.on(HlsClass.Events.MANIFEST_PARSED, () => {
+                        if (hls !== instance || (opt.requestId !== undefined && opt.requestId !== sourceRequestId)) return;
+                        try {
+                            if (Number.isFinite(opt.resumeTime) && originalVideo.readyState >= 1) originalVideo.currentTime = opt.resumeTime;
+                            if (opt.autoplay) originalVideo.play().catch(() => { });
+                            refreshQualityMenuIfOpen();
+                        } catch { }
+                        finish();
+                    });
+                    instance.on(HlsClass.Events.ERROR, (event, data) => {
+                        if (hls !== instance || !data?.fatal) return;
+                        finish(new Error('HLS ' + (data.details || data.type || 'fatal playback error')));
+                    });
+                    instance.attachMedia(originalVideo);
+                }).catch(finish);
             });
         }
 
         function loadDash(url, opt) {
             destroyEngines();
+            originalVideo.pause();
+            originalVideo.removeAttribute('src');
+            originalVideo.load();
             const meta0 = __plyrtyMeta.get(originalVideo) || {};
             const isData = typeof url === 'string' && url.startsWith('data:');
             const isMaster = typeof url === 'string' && /\.mpd(\?|#|$)/i.test(url) && !isData;
@@ -2031,10 +2087,34 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                 __plyrtyMeta.set(originalVideo, { ...cur, lastDashUrl: url });
             } catch { }
             const start = Number.isFinite(opt.resumeTime) ? opt.resumeTime : undefined;
-            const dp = initDashIfAvailable(originalVideo, url, rewrite);
-            try {
-                if (dp?.initialize) dp.initialize(originalVideo, rewrite(url), false, start);
-            } catch { }
+            const dp = initDashIfAvailable(originalVideo, undefined, rewrite);
+            if (!dp) return Promise.reject(new Error('MPEG-DASH engine is unavailable'));
+            const ready = new Promise((resolve, reject) => {
+                let settled = false;
+                const finish = (error) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    try { dp.off(window.dashjs.MediaPlayer.events.STREAM_INITIALIZED, onReady); } catch { }
+                    try { dp.off(window.dashjs.MediaPlayer.events.ERROR, onError); } catch { }
+                    if (error) reject(error); else resolve();
+                };
+                const onReady = () => {
+                    if (opt.requestId !== undefined && opt.requestId !== sourceRequestId) {
+                        finish(new Error('Source change superseded'));
+                        return;
+                    }
+                    finish();
+                };
+                const onError = (event) => finish(new Error('MPEG-DASH playback error'));
+                const timer = setTimeout(() => finish(new Error('Timed out while loading MPEG-DASH manifest')), 20000);
+                try {
+                    const E = window.dashjs.MediaPlayer.events;
+                    dp.on(E.STREAM_INITIALIZED, onReady);
+                    dp.on(E.ERROR, onError);
+                    dp.initialize(originalVideo, rewrite(url), false, start);
+                } catch (error) { finish(error); }
+            });
             try {
                 if (dp && window.dashjs) {
                     const E = window.dashjs.MediaPlayer.events;
@@ -2062,20 +2142,15 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                     }
                 }
             } catch { }
-            if (opt.autoplay) originalVideo.play().catch(() => { });
+            if (opt.autoplay) ready.then(() => originalVideo.play().catch(() => { })).catch(() => { });
+            return ready;
         }
 
         function loadSource(url, type, opt) {
             const t = (type || guessTypeFromUrl(url)).toLowerCase();
-            if (t.includes('dash') || t.endsWith('mpd')) {
-                loadDash(url, opt);
-                return;
-            }
-            if (t.includes('mpegurl') || t.includes('m3u8')) {
-                loadHls(url, opt);
-                return;
-            }
-            loadNative(url, t, opt);
+            if (t.includes('dash') || t.endsWith('mpd')) return loadDash(url, opt);
+            if (t.includes('mpegurl') || t.includes('m3u8')) return loadHls(url, opt);
+            return loadNative(url, t, opt);
         }
 
         function pickInitialSource(list, video) {
@@ -2105,21 +2180,25 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         }
 
         const api = {
-            setSource: (url, type, resolutions) => {
-                return new Promise((resolve, reject) => {
-                    try {
-                        const t = type || guessTypeFromUrl(url);
-                        const opt = { autoplay: !originalVideo.paused, resumeTime: 0 };
-                        if (resolutions) {
-                            const meta = __plyrtyMeta.get(originalVideo) || {};
-                            __plyrtyMeta.set(originalVideo, { ...meta, _customMap: resolutions });
-                        }
-                        loadSource(url, t, opt);
-                        resolve();
-                    } catch (e) {
-                        reject(e);
-                    }
-                });
+            setSource: async (url, type, resolutions) => {
+                const t = type || guessTypeFromUrl(url);
+                const wasPlaying = !originalVideo.paused;
+                const requestId = ++sourceRequestId;
+                const opt = { autoplay: wasPlaying, resumeTime: 0, requestId };
+                if (resolutions) {
+                    const meta = __plyrtyMeta.get(originalVideo) || {};
+                    __plyrtyMeta.set(originalVideo, { ...meta, _customMap: resolutions });
+                }
+                stopAutoProbe();
+                currentHeight = 0;
+                lastAutoHeight = 0;
+                autoModeControlled = false;
+                try {
+                    await loadSource(url, t, opt);
+                    refreshQualityMenuIfOpen();
+                } catch (e) {
+                    throw e;
+                }
             },
             play: () => originalVideo.play(),
             pause: () => originalVideo.pause(),
