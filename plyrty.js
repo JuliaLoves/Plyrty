@@ -856,7 +856,9 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
 
         function refreshQualityMenuIfOpen() {
             try {
-                if (menuStack?.at?.(-1) === renderQualityMenu) renderQualityMenu();
+                const activeMenu = menuStack?.at?.(-1);
+                if (activeMenu === renderQualityMenu) renderQualityMenu();
+                else if (activeMenu === renderRoot) renderRoot();
             } catch { }
         }
 
@@ -2173,14 +2175,14 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
                         originalVideo.removeAttribute('src');
                         originalVideo.querySelectorAll('source').forEach(source => source.remove());
                         originalVideo.load();
-                        if (resolutions) {
-                            const meta = __plyrtyMeta.get(originalVideo) || {};
-                            __plyrtyMeta.set(originalVideo, { ...meta, _customMap: resolutions });
-                        } else {
-                            const meta = __plyrtyMeta.get(originalVideo) || {};
-                            delete meta._customMap;
-                            __plyrtyMeta.set(originalVideo, meta);
-                        }
+                        const meta = __plyrtyMeta.get(originalVideo) || {};
+                        delete meta.lastDashUrl;
+                        delete meta.masterDashUrl;
+                        delete meta.currentMpdUrl;
+                        delete meta.allHeights;
+                        if (resolutions) meta._customMap = resolutions;
+                        else delete meta._customMap;
+                        __plyrtyMeta.set(originalVideo, meta);
                         loadSource(url, type || guessTypeFromUrl(url), { autoplay: wasPlaying, resumeTime: 0 });
                         if (generation !== sourceGeneration) finish(new Error('Source change superseded'));
                     } catch (e) {
