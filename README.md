@@ -141,3 +141,9 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 ***
 
 *Built with ❤️ by Julia*
+
+## Live Demo
+
+The GitHub Pages demo in `docs/` loads `plyrty.js` and `plyrty.css` directly from the repository root using raw GitHub URLs. There are no copied player bundles in `docs/`; the demo therefore follows the current `main` player sources.
+
+The demo includes HTTPS MP4, HLS, and MPEG-DASH samples from MDN, Mux, and Shaka Player's public test assets. External sample availability can change independently of this repository.
