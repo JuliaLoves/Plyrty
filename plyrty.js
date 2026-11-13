@@ -1749,7 +1749,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space' && isPlayerKeyboardTarget(e) && !isTypingTarget()) {
+            if (e.code === 'Space' && (spaceEngaged || isPlayerKeyboardTarget(e))) {
                 clearTimeout(spaceHoldTimer);
                 if (spaceEngaged) {
                     spaceEngaged = false;
