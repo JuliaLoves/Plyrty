@@ -1687,9 +1687,20 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         }
 
         wrapper.tabIndex = 0;
+        wrapper.setAttribute('role', 'region');
+        wrapper.setAttribute('aria-label', 'Plyrty video player');
+
+        // Keyboard shortcuts belong to the player that currently has focus.
+        // This prevents one key press from controlling every player on the page.
+        function isPlayerKeyboardTarget(e) {
+            return wrapper.contains(e.target)
+                || wrapper.contains(document.activeElement)
+                || document.fullscreenElement === wrapper;
+        }
 
         document.addEventListener('keydown', async (e) => {
-            if (isTypingTarget()) return;
+            if (!isPlayerKeyboardTarget(e) || isTypingTarget()) return;
+            if (e.altKey || e.ctrlKey || e.metaKey) return;
             if (e.code === 'Space') {
                 if (e.repeat) {
                     e.preventDefault();
@@ -1738,7 +1749,7 @@ window.plyrtySetSource = function (target, url, type = 'application/x-mpegurl', 
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') {
+            if (e.code === 'Space' && (spaceEngaged || isPlayerKeyboardTarget(e))) {
                 clearTimeout(spaceHoldTimer);
                 if (spaceEngaged) {
                     spaceEngaged = false;

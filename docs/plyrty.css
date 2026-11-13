@@ -573,3 +573,69 @@
         font-size: 15px;
     }
 }
+
+/* Accessibility and responsive interaction improvements */
+.plyrty-root:focus-visible {
+    outline: 2px solid var(--plyrty-accent);
+    outline-offset: 3px;
+}
+
+.plyrty-root button:focus-visible,
+.plyrty-root [role="button"]:focus-visible,
+.plyrty-root input:focus-visible {
+    outline: 2px solid var(--plyrty-accent);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+.plyrty-root button:focus:not(:focus-visible) {
+    outline: none;
+}
+
+.plyrty-progress {
+    min-height: 12px;
+    touch-action: pan-y;
+}
+
+.plyrty-progress::before {
+    content: "";
+    position: absolute;
+    inset: -10px 0;
+}
+
+.plyrty-root .plyrty-btn {
+    min-width: 40px;
+    min-height: 40px;
+}
+
+@media (max-width: 600px) {
+    .plyrty-root {
+        --plyrty-control-padding: 8px;
+        --plyrty-gap-size: 6px;
+    }
+
+    .plyrty-controls {
+        min-height: 76px;
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    .plyrty-progress {
+        min-height: 14px;
+    }
+
+    .plyrty-menu {
+        max-height: min(65dvh, 420px);
+        overscroll-behavior: contain;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .plyrty-root *,
+    .plyrty-root *::before,
+    .plyrty-root *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+}

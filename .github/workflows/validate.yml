@@ -1,0 +1,23 @@
+name: Validate
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  syntax-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        run: |
+          node --check plyrty.js
+          node --check docs/plyrty.js
+      - name: Ensure demo assets match package assets
+        run: |
+          cmp plyrty.js docs/plyrty.js
+          cmp plyrty.css docs/plyrty.css
