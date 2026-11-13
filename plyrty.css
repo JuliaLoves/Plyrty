@@ -109,12 +109,14 @@
 }
 
 .plyrty-controls {
-    height: calc(100% + 10px);
+    height: auto;
+    min-height: 64px;
+    align-self: end;
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: var(--plyrty-gap-size);
-    padding: var(--plyrty-control-padding) var(--plyrty-control-padding) 0 var(--plyrty-control-padding);
+    padding: var(--plyrty-control-padding) var(--plyrty-control-padding) max(8px, env(safe-area-inset-bottom)) var(--plyrty-control-padding);
     background: linear-gradient(to top, rgba(0, 0, 0, 0.65), transparent);
     pointer-events: auto;
     opacity: 0;
@@ -341,10 +343,14 @@
     }
 }
 
-.plyrty-root.ui-show .plyrty-controls,
+.plyrty-root.ui-show .plyrty-controls {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .plyrty-root.ui-show .plyrty-topbar {
     opacity: 1;
-    transform: translateY(-20px);
+    transform: translateY(0);
 }
 
 .plyrty-root.ui-hide .plyrty-controls {
