@@ -1,164 +1,23 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0d0d0d;
-    background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
-    color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-/* Header / Title Area */
-.demo-header {
-    margin-bottom: 2rem;
-    text-align: center;
-    opacity: 0;
-    animation: fadeIn 0.8s ease-out forwards;
-}
-
-.demo-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0.5rem;
-}
-
-.demo-subtitle {
-    color: #888;
-    font-size: 1rem;
-    font-weight: 400;
-}
-
-/* Main Player Container */
-.player-container {
-    width: 100%;
-    max-width: 900px;
-    padding: 0 20px;
-    opacity: 0;
-    animation: slideUp 0.8s ease-out 0.2s forwards;
-}
-
-/* Wrapper adds a nice shadow/glow behind the player */
-.player-wrapper {
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 
-        0 20px 50px rgba(0, 0, 0, 0.7),
-        0 0 0 1px rgba(255, 255, 255, 0.1); /* Subtle border */
-    background: #000;
-    aspect-ratio: 16 / 9;
-}
-
-/* Video Selector Styles */
-.video-selector-container {
-    margin-top: 20px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    opacity: 0;
-    animation: fadeIn 0.8s ease-out 0.6s forwards;
-}
-
-.selector-label {
-    color: #888;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.video-select {
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 8px;
-    background-color: #1e1e1e; /* Явный цвет фона, а не rgba */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 1rem;
-    outline: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    appearance: none;
-    /* Стрелка SVG */
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 15px top 50%;
-    background-size: 12px auto;
-}
-
-.video-select:hover {
-    background-color: #2a2a2a;
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.video-select:focus {
-    border-color: #4a90e2;
-    background-color: #2a2a2a;
-}
-
-.video-select option {
-    background-color: #1e1e1e;
-    color: #ffffff;
-    padding: 12px;
-}
-
-.video-description {
-    margin-top: 15px;
-    background: rgba(0,0,0,0.3);
-    padding: 15px;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: #ccc;
-    display: none; /* Hidden by default */
-}
-
-.video-description.active {
-    display: block;
-}
-
-/* Footer / Links */
-.demo-footer {
-    margin-top: 2rem;
-    text-align: center;
-    opacity: 0;
-    animation: fadeIn 0.8s ease-out 0.4s forwards;
-}
-
-.btn-github {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-github i {
-    font-size: 1.3rem;
-}
-
-.btn-github:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-}
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* Demo page only. Plyrty's own stylesheet is loaded from the repository root. */
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #090b10; color: #f5f7fb; }
+* { box-sizing: border-box; }
+body { min-height: 100vh; margin: 0; padding: 48px 18px 28px; display: flex; flex-direction: column; align-items: center; background: radial-gradient(ellipse at 50% 0%, #1c2638 0%, #0b0e14 48%, #07090d 100%); }
+.demo-header { text-align: center; margin: 0 0 28px; }
+.demo-title { margin: 0; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.045em; line-height: 1.1; background: linear-gradient(120deg, #fff, #9eb4d5); color: transparent; background-clip: text; }
+.demo-subtitle { margin: 12px 0 0; color: #98a6ba; font-size: .98rem; }
+.player-container { width: min(100%, 960px); }
+.player-wrapper { position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; background: #000; box-shadow: 0 24px 80px rgba(0,0,0,.5); }
+.player-wrapper video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.video-selector-container { display: grid; gap: 10px; margin-top: 22px; }
+.selector-label { color: #c0cada; font-size: .9rem; font-weight: 600; }
+.video-select { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid #303b4d; border-radius: 10px; color: #f5f7fb; background: #151c28; font: inherit; }
+.video-select:focus-visible, .btn-github:focus-visible { outline: 2px solid #8ab4ff; outline-offset: 3px; }
+.video-description { margin: 2px 0 0; color: #aab6c8; line-height: 1.6; }
+.demo-status { min-height: 1.4em; margin: 0; color: #91a2ba; font-size: .88rem; }
+.demo-status[data-state="success"] { color: #8ed9ad; }
+.demo-status[data-state="error"] { color: #ff9a9a; }
+.demo-footer { margin-top: auto; padding-top: 36px; }
+.btn-github { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; border: 1px solid #354258; border-radius: 999px; color: #eaf0fa; background: #151c28; text-decoration: none; transition: background .18s ease, border-color .18s ease; }
+.btn-github:hover { background: #202c3d; border-color: #526783; }
+@media (max-width: 600px) { body { padding: 28px 12px 20px; } .demo-header { margin-bottom: 20px; } .player-wrapper { border-radius: 10px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
